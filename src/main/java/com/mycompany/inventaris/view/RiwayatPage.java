@@ -1,89 +1,58 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mycompany.inventaris.view;
 
-/**
- *
- * @author Amy
- */
-
-import com.mycompany.inventaris.model.Barang;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.stage.Stage;
 
-public class RiwayatPage extends StackPane {
+public class RiwayatPage extends BorderPane {
     
     public RiwayatPage() {
+        loadStylesheet();
         initializeUI();
     }
 
+    private void loadStylesheet() {
+        try {
+            String css = getClass().getResource("/css/main.css").toExternalForm();
+            this.getStylesheets().add(css);
+        } catch (Exception e) {
+            System.err.println("Failed to load CSS: " + e.getMessage());
+        }
+    }
+
     private void initializeUI() {
+        // SIDEBAR
+        VBox sidebar = createSidebar();
 
-        // Background Shape
-        Pane bg = new Pane();
-
-        Circle topRed = new Circle(170, Color.web("#931717"));
-        topRed.setLayoutX(500);
-        topRed.setLayoutY(-40);
-
-        Circle smallBlue = new Circle(35, Color.web("#3C4C79"));
-        smallBlue.setLayoutX(300);
-        smallBlue.setLayoutY(140);
-
-        Circle topRight = new Circle(150, Color.web("#A42323"));
-        topRight.setLayoutX(1250);
-        topRight.setLayoutY(40);
-
-        bg.getChildren().addAll(topRed, smallBlue, topRight);
-
-
-        // Navbar
-        BorderPane navbar = new BorderPane();
-        navbar.setStyle("-fx-padding: 25 60; -fx-font-family: 'Poppins';");
-
-        ImageView logo = new ImageView(
-                new Image(getClass().getResourceAsStream("/assets/logoAsa.png"))
-        );
-        logo.setFitHeight(80);
-        logo.setPreserveRatio(true);
-        navbar.setLeft(logo);
-
-        HBox menu = new HBox(
-                new Label("Home"),
-                new Label("About"),
-                new Label("Guide"),
-                new Label("Contact")
-        );
-        menu.setSpacing(40);
-        menu.setStyle("-fx-font-size: 16px; -fx-text-fill: #334155; -fx-font-weight: bold; -fx-padding: 0 0 0 300; -fx-font-family: 'Poppins';");
-        menu.setAlignment(Pos.CENTER);
-        navbar.setCenter(menu);
-
+        // MAIN CONTENT
+        VBox mainContent = new VBox(20);
+        mainContent.getStyleClass().add("main-content");
 
         // Header
         Label hello = new Label("Hello, User !!");
         hello.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #334155;");
 
         Label title = new Label("Riwayat Peminjaman");
-        title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
+        title.getStyleClass().add("page-title");
 
         VBox header = new VBox(hello, title);
         header.setSpacing(8);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.setStyle("-fx-padding: 20 60 10 60;");
 
+        // Search Bar
+        TextField searchField = new TextField();
+        searchField.setPromptText("🔍 Cari Riwayat...");
+        searchField.getStyleClass().add("search-field");
 
         // Tabel Riwayat
         TableView<PeminjamanData> table = new TableView<>();
-        table.setPrefWidth(1000);
+        table.getStyleClass().add("table-view");
 
         TableColumn<PeminjamanData, String> noCol = new TableColumn<>("No.");
         noCol.setPrefWidth(60);
@@ -110,6 +79,23 @@ public class RiwayatPage extends StackPane {
 
         TableColumn<PeminjamanData, String> statusCol = new TableColumn<>("Status");
         statusCol.setPrefWidth(120);
+        statusCol.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String status, boolean empty) {
+                super.updateItem(status, empty);
+                if (empty || status == null) {
+                    setGraphic(null);
+                } else {
+                    Label statusLabel = new Label(status);
+                    if (status.equals("Dipinjam")) {
+                        statusLabel.getStyleClass().add("status-dipinjam");
+                    } else {
+                        statusLabel.getStyleClass().add("status-dikembalikan");
+                    }
+                    setGraphic(statusLabel);
+                }
+            }
+        });
         statusCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getStatus()));
 
         TableColumn<PeminjamanData, Void> actionCol = new TableColumn<>("Action");
@@ -118,18 +104,11 @@ public class RiwayatPage extends StackPane {
             private final Button btn = new Button("Detail");
 
             {
-                btn.setStyle(
-                    "-fx-background-color: #A42323; " +
-                    "-fx-text-fill: white; " +
-                    "-fx-font-weight: bold; " +
-                    "-fx-padding: 6 20; " +
-                    "-fx-background-radius: 5; " +
-                    "-fx-cursor: hand;"
-                );
+                btn.getStyleClass().add("btn-danger");
                 btn.setOnAction(e -> {
                     PeminjamanData data = getTableView().getItems().get(getIndex());
-                    // Nanti bisa buka detail popup
                     System.out.println("Detail peminjaman: " + data.getIdPeminjaman());
+                    // TODO: Buka detail popup
                 });
             }
 
@@ -142,8 +121,7 @@ public class RiwayatPage extends StackPane {
 
         table.getColumns().addAll(noCol, idCol, namaCol, barangCol, tglCol, statusCol, actionCol);
 
-
-        // Riwayat Data Smeentara
+        // Dummy data
         table.getItems().addAll(
             new PeminjamanData("PMJ001", "Ahmad Fauzi", "Laptop Asus", "2025-11-20", "Dipinjam"),
             new PeminjamanData("PMJ002", "Siti Nurhaliza", "Proyektor", "2025-11-21", "Dikembalikan"),
@@ -152,23 +130,81 @@ public class RiwayatPage extends StackPane {
             new PeminjamanData("PMJ005", "Doni Pratama", "Computer PC", "2025-11-24", "Dipinjam")
         );
 
+        // Search functionality
+        searchField.textProperty().addListener((obs, old, newVal) -> {
+            // TODO: Implement search
+        });
 
-        // Tabel
-        HBox tableWrapper = new HBox(table);
-        tableWrapper.setAlignment(Pos.CENTER);
-        tableWrapper.setStyle("-fx-padding: 10 60 40 60;");
+        mainContent.getChildren().addAll(header, searchField, table);
 
-
-        // Konten Stack
-        VBox content = new VBox(navbar, header, tableWrapper);
-        content.setSpacing(10);
-        content.setAlignment(Pos.TOP_CENTER);
-
-        this.getChildren().addAll(bg, content);
+        this.setLeft(sidebar);
+        this.setCenter(mainContent);
     }
     
+    private VBox createSidebar() {
+        VBox sidebar = new VBox(20);
+        sidebar.getStyleClass().add("sidebar");
+        sidebar.setAlignment(Pos.TOP_CENTER);
+
+        ImageView logo = new ImageView(new Image(getClass().getResourceAsStream("/assets/logoAsa.png")));
+        logo.getStyleClass().add("sidebar-logo");
+
+        VBox logoText = new VBox(2);
+        logoText.getStyleClass().add("sidebar-logo-text");
+        Label uni = new Label("UNIVERSITAS");
+        uni.getStyleClass().add("sidebar-uni-label");
+        Label asa = new Label("ASA INDONESIA");
+        asa.getStyleClass().add("sidebar-asa-label");
+        logoText.getChildren().addAll(uni, asa);
+
+        Circle userCircle = new Circle(30, Color.web("#94a3b8"));
+        StackPane userIcon = new StackPane();
+        Label userLabel = new Label("U");
+        userLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
+        userIcon.getChildren().addAll(userCircle, userLabel);
+
+        Label guestLabel = new Label("Guest");
+        guestLabel.getStyleClass().add("sidebar-user-label");
+
+        VBox userBox = new VBox(8, userIcon, guestLabel);
+        userBox.getStyleClass().add("sidebar-user-box");
+
+        VBox menuBox = new VBox(10);
+        menuBox.getStyleClass().add("sidebar-menu");
+        
+        Button dashboardBtn = createMenuButton("🏠  Dashboard", false);
+        Button riwayatBtn = createMenuButton("🕐  Riwayat", true);
+        
+        dashboardBtn.setOnAction(e -> {
+            Stage currentStage = (Stage) dashboardBtn.getScene().getWindow();
+            Scene newScene = new Scene(new UserPage(), 1280, 720);
+            currentStage.setScene(newScene);
+        });
+        
+        menuBox.getChildren().addAll(dashboardBtn, riwayatBtn);
+
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        Button logoutBtn = new Button("⎋  Logout");
+        logoutBtn.getStyleClass().add("logout-button");
+
+        sidebar.getChildren().addAll(logo, logoText, userBox, menuBox, spacer, logoutBtn);
+        return sidebar;
+    }
+
+    private Button createMenuButton(String text, boolean active) {
+        Button btn = new Button(text);
+        btn.setMaxWidth(Double.MAX_VALUE);
+        if (active) {
+            btn.getStyleClass().add("menu-button-active");
+        } else {
+            btn.getStyleClass().add("menu-button");
+        }
+        return btn;
+    }
     
-    // ===== INNER CLASS untuk Data Peminjaman =====
+    // Inner class untuk data peminjaman
     public static class PeminjamanData {
         private String idPeminjaman;
         private String namaPeminjam;

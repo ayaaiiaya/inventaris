@@ -25,6 +25,8 @@ public class MainPage extends StackPane {
     private Stage stage;
     public MainPage(Stage stage) {
         this.stage = stage;
+        System.out.println("CSS PATH: " + getClass().getResource("/css/main.css"));
+
         initializeUI();
     }
 
@@ -99,7 +101,7 @@ public class MainPage extends StackPane {
                 "efisien, cepat, dan terintegrasi."
         );
         subtitle.setStyle(
-            "-fx-font-size: 18px; -fx-font-weight: normal; -fx-text-fill: #black; -fx-font-family: 'Poppins';"
+            "-fx-font-size: 18px; -fx-font-weight: normal; -fx-text-fill: black; -fx-font-family: 'Poppins';"
         );
 
         subtitle.setLineSpacing(4);
@@ -108,7 +110,12 @@ public class MainPage extends StackPane {
         userBtn.setStyle(
             "-fx-background-color: #A42323; -fx-text-fill: white; -fx-padding: 10 38; -fx-background-radius: 20; -fx-font-family: 'Poppins';"
         );
-        userBtn.setOnAction(e -> goToUserPage());
+        userBtn.setOnAction(e -> {
+        LoginPage loginPage = new LoginPage(stage);
+        Scene newScene = new Scene(loginPage, 1280, 720);
+        newScene.getStylesheets().add(getClass().getResource("/css/main.css").toExternalForm());
+        stage.setScene(newScene);
+        });
 
         Button adminBtn = new Button("Admin");
         adminBtn.setStyle(
@@ -142,10 +149,4 @@ public class MainPage extends StackPane {
         // Stackpane
         this.getChildren().addAll(bgShapes, content);
     }
-    
-     private void goToUserPage(){
-       Scene newScene = new Scene(new UserPage(), 1280, 720);
-       stage.setScene(newScene);
-     }
-        
 }
