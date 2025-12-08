@@ -234,12 +234,31 @@ public class LoginPage extends StackPane {
         }
 
         User u = LoginDAO.login(user, pw);
-        if (u != null) {
-            Scene scene = new Scene(new UserPage(u), 1280, 720);
-            stage.setScene(scene);
-        } else {
+        if (u == null) {
             show("Login Gagal", "Username atau password salah!");
+            return;
+        } 
+        Scene scene;
+        switch (u.getRole().toLowerCase()){
+            case "mahasiswa":
+            case "dosen":
+            case "karyawan":
+                scene = new Scene(new UserPage(u), 1280, 720);
+                break;
+                
+            case "admin":
+                scene = new Scene(new AdminPage(u), 1280, 720);
+                break;
+                
+            case "superadmin":
+                scene = new Scene(new SuperAdminPage(u), 1280, 720);
+                break;
+                
+            default:
+                show("Error", "Role Tidak Dikenali !!");
+                return;
         }
+        stage.setScene(scene);
     }
 
     private void show(String title, String msg) {

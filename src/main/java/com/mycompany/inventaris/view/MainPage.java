@@ -115,6 +115,10 @@ public class MainPage extends StackPane {
         adminBtn.setStyle(
             "-fx-background-color: #2C3A63; -fx-text-fill: white; -fx-padding: 10 38; -fx-background-radius: 20; -fx-font-family: 'Poppins';"
         );
+        adminBtn.setOnAction(e -> {
+            Scene newScene = new Scene(new LoginPage(stage), 1280, 720);
+            stage.setScene(newScene);
+        });
 
         HBox buttons = new HBox(userBtn, adminBtn);
         buttons.setSpacing(20);
