@@ -10,6 +10,7 @@ package com.mycompany.inventaris.view;
  */
 
 import com.mycompany.inventaris.model.User;
+import java.io.File;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -60,7 +61,20 @@ public class UserPage extends BorderPane {
 
 
         // USER PROFILE 
-        Image userPhoto = new Image(getClass().getResourceAsStream("/assets/user.png"));
+        Image userPhoto;
+        if (user.getPhoto() != null && !user.getPhoto().isEmpty()
+                && new File(user.getPhoto()).exists()) {
+
+            userPhoto = new Image(
+                new File(user.getPhoto()).toURI().toString(),
+                false
+            );
+        }else {
+            // fallback kalau user belum upload foto
+            userPhoto = new Image(
+                getClass().getResourceAsStream("/assets/user.png")
+            );
+        }
         ImageView userImage = new ImageView(userPhoto);
         userImage.setFitWidth(40);
         userImage.setFitHeight(40);
