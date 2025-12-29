@@ -10,6 +10,7 @@ package com.mycompany.inventaris.view;
  */
 
 import com.mycompany.inventaris.dao.UserAdminDAO;
+import com.mycompany.inventaris.dao.AuditTrailDAO;
 import com.mycompany.inventaris.model.User;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
@@ -296,10 +297,10 @@ public class AdminUserPage extends BorderPane {
             
             switch(selected) {
                 case "Newest":
-                    java.util.Collections.reverse(sortedList);
+                    sortedList = new ArrayList<>(allData);
                     break;
                 case "Oldest":
-                    sortedList = new ArrayList<>(allData);
+                    java.util.Collections.reverse(sortedList);
                     break;
                 case "A-Z":
                     sortedList.sort((a, b) -> a.getNama().compareToIgnoreCase(b.getNama()));
@@ -369,20 +370,42 @@ public class AdminUserPage extends BorderPane {
             confirm.setContentText("User \"" + user.getNama() + "\" will be deleted.");
             
             confirm.showAndWait().ifPresent(result -> {
-                if(result == ButtonType.OK){
-                    UserAdminDAO dao = new UserAdminDAO();
-                    boolean success = dao.delete(user.getIdUser());
-                    
-                    if(success){
-                        allData.remove(user);
-                        table.getItems().remove(user);
-                    }else{
-                        Alert error = new Alert(Alert.AlertType.ERROR);
-                        error.setHeaderText("Delete Failed");
-                        error.setContentText("Failed to delete user");
-                        error.show();
-                    }
-                }
+               if (result == ButtonType.OK) {
+
+    UserAdminDAO dao = new UserAdminDAO();
+    boolean success = dao.delete(user.getIdUser());
+
+    if (success) {
+
+        // 🔹 Audit log
+        String ip = "UNKNOWN";
+        try {
+            ip = java.net.InetAddress.getLocalHost().getHostAddress();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        AuditTrailDAO.log(
+                superadmin.getIdUser(),
+                superadmin.getUsername(),
+                "HAPUS_USER",
+                "Username " + user.getUsername()
+                        + " bernama " + user.getNama() + " dihapus",
+                ip,
+                "BERHASIL"
+        );
+
+        allData.remove(user);
+        table.getItems().remove(user);
+
+    } else {
+        Alert error = new Alert(Alert.AlertType.ERROR);
+        error.setHeaderText("Delete Failed");
+        error.setContentText("Failed to delete user");
+        error.show();
+    }
+}
+
             });
         });
         viewItem.setOnAction(e -> showUserDetail(user));
@@ -439,16 +462,60 @@ public class AdminUserPage extends BorderPane {
 
     Button save = new Button("Save");
     save.setOnAction(e -> {
-        user.setNama(nameField.getText());
-        user.setEmail(emailField.getText());
-        user.setPhone(phoneField.getText());
-        user.setRole(roleBox.getValue());
-        user.setStatus(statusBox.getValue());
 
-        new UserAdminDAO().update(user);
+    // 1️⃣ Capture OLD values
+    String oldName = user.getNama();
+    String oldEmail = user.getEmail();
+    String oldPhone = user.getPhone();
+    String oldRole = user.getRole();
+    String oldStatus = user.getStatus();
+
+    // 2️⃣ Apply NEW values
+    user.setNama(nameField.getText());
+    user.setEmail(emailField.getText());
+    user.setPhone(phoneField.getText());
+    user.setRole(roleBox.getValue());
+    user.setStatus(statusBox.getValue());
+
+    boolean success = new UserAdminDAO().update(user);
+
+    if (success) {
+
+        // 3️⃣ Detect what changed
+        List<String> changes = new ArrayList<>();
+
+        if (!oldName.equals(user.getNama())) changes.add("Nama");
+        if (!oldEmail.equals(user.getEmail())) changes.add("Email");
+        if (!oldPhone.equals(user.getPhone())) changes.add("Phone");
+        if (!oldRole.equals(user.getRole())) changes.add("Role");
+        if (!oldStatus.equals(user.getStatus())) changes.add("Status");
+
+        String deskripsi = changes.isEmpty()
+                ? "Data user diperbarui tanpa perubahan"
+                : "Data user diubah: " + String.join(", ", changes);
+
+        // 4️⃣ Log audit
+        String ip = "UNKNOWN";
+        try {
+            ip = java.net.InetAddress.getLocalHost().getHostAddress();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        AuditTrailDAO.log(
+                superadmin.getIdUser(),
+                superadmin.getUsername(),
+                "EDIT_BARANG",
+                deskripsi,
+                ip,
+                "BERHASIL"
+        );
+
         table.refresh();
         editPopup.close();
-    });
+    }
+});
+
 
     Button cancel = new Button("Cancel");
     cancel.setOnAction(e -> editPopup.close());
@@ -693,19 +760,49 @@ public class AdminUserPage extends BorderPane {
                 user.setPhoto(selectedPhoto[0].getAbsolutePath());
             }
             
-            UserAdminDAO dao = new UserAdminDAO();
-            boolean success = dao.insert(user);
-            
-            if(success){
-                allData = dao.getAll();
-                table.getItems().clear();
-                table.getItems().addAll(allData);
-                popup.close();
-            }
-            else{
-                System.out.println("Gagal Insert Data");
-            }
-        });
+           UserAdminDAO dao = new UserAdminDAO();
+boolean success = dao.insert(user);
+
+// 🔹 IP Address
+String ip = "UNKNOWN";
+try {
+    ip = java.net.InetAddress.getLocalHost().getHostAddress();
+} catch (Exception ex) {
+    ex.printStackTrace();
+}
+
+if (success) {
+    AuditTrailDAO.log(
+        superadmin.getIdUser(),
+        superadmin.getUsername(),
+        "TAMBAH_USER",
+        "Menambahkan user baru: "
+            + user.getUsername()
+            + " (" + user.getNama() + ")",
+        ip,
+        "BERHASIL"
+    );
+
+    allData = dao.getAll();
+    table.getItems().clear();
+    table.getItems().addAll(allData);
+    popup.close();
+
+} else {
+
+    AuditTrailDAO.log(
+        superadmin.getIdUser(),
+        superadmin.getUsername(),
+        "TAMBAH_USER",
+        "Gagal menambahkan user baru: "
+            + user.getUsername()
+            + " (" + user.getNama() + ")",
+        ip,
+        "GAGAL"
+    );
+
+    System.out.println("Gagal Insert Data");
+}       });
         
         buttonBox.getChildren().addAll(submitBtn);
 
@@ -872,6 +969,21 @@ public class AdminUserPage extends BorderPane {
             "-fx-cursor: hand;"
         );
         logoutBtn.setOnAction(e -> {
+            String ip = "UNKNOWN";
+    try {
+        ip = java.net.InetAddress.getLocalHost().getHostAddress();
+    } catch (Exception ex) {
+        ex.printStackTrace();
+    }
+
+    AuditTrailDAO.log(
+        superadmin.getIdUser(),          
+        superadmin.getUsername(),         
+        "LOGOUT",
+        "Pengguna keluar dari sistem",
+        ip,
+        "BERHASIL"
+    );
             Stage currentStage = (Stage) logoutBtn.getScene().getWindow();
             Scene newScene = new Scene(new MainPage(currentStage), 1280, 720);
             currentStage.setScene(newScene);

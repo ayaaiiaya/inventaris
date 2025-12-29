@@ -11,6 +11,7 @@ package com.mycompany.inventaris.view;
 
 import com.mycompany.inventaris.dao.PeminjamanDAO;
 import com.mycompany.inventaris.dao.PengembalianDAO;
+import com.mycompany.inventaris.dao.AuditTrailDAO;
 import com.mycompany.inventaris.model.Peminjaman;
 import com.mycompany.inventaris.model.Pengembalian;
 import com.mycompany.inventaris.model.User;
@@ -331,11 +332,26 @@ public class PengembalianBarangPage extends BorderPane {
             "-fx-font-weight: bold; " +
             "-fx-cursor: hand;"
         );
-        logoutBtn.setOnAction(e -> {
-            Stage currentStage = (Stage) logoutBtn.getScene().getWindow();
-            Scene newScene = new Scene(new MainPage(currentStage), 1280, 720);
-            currentStage.setScene(newScene);
-        });
+           logoutBtn.setOnAction(e -> {
+    String ip = "UNKNOWN";
+    try {
+        ip = java.net.InetAddress.getLocalHost().getHostAddress();
+    } catch (Exception ex) {
+        ex.printStackTrace();
+    }
+
+    AuditTrailDAO.log(
+        user.getIdUser(),          
+        user.getUsername(),         
+        "LOGOUT",
+        "Pengguna keluar dari sistem",
+        ip,
+        "BERHASIL"
+    ); 
+        Stage currentStage = (Stage) logoutBtn.getScene().getWindow();
+    Scene newScene = new Scene(new MainPage(currentStage), 1280, 720);
+    currentStage.setScene(newScene);
+       });
 
         sidebar.getChildren().addAll(logoBox, userBox, menuBox, spacer, logoutBtn);
         return sidebar;
